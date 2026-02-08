@@ -20,7 +20,9 @@ engine: AsyncEngine = create_async_engine(
 AsyncSessionFactory = async_sessionmaker(
     engine,
     class_=AsyncSession,
-    expire_on_commit=False,
+    expire_on_commit=False,  # нужно для async: атрибуты доступны после commit
+    autocommit=False,
+    autoflush=True,
 )
 
 

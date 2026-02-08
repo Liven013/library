@@ -1,7 +1,7 @@
-from uuid import uuid4, UUID
+from uuid import UUID
 
-from sqlmodel import func, select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import with_session
 from src.models.authors import Author, AuthorCreate, AuthorUpdate
@@ -9,7 +9,7 @@ from src.models.base import PaginationRequest
 
 
 class AuthorsRepository:
-    """Репозиторий для работы с Author через SQLModel ORM."""
+    """Репозиторий для работы с Author через SQLModel ORM (SQLAlchemy 2.0 style)."""
 
     @with_session
     async def add(
@@ -17,7 +17,7 @@ class AuthorsRepository:
         author_create: AuthorCreate,
         session: AsyncSession,
     ) -> Author:
-        author = Author(id=uuid4(), **(author_create.model_dump()))
+        author = Author(**(author_create.model_dump()))
         session.add(author)
         await session.flush()
         await session.refresh(author)
@@ -29,8 +29,7 @@ class AuthorsRepository:
         author_id: UUID,
         session: AsyncSession,
     ) -> Author | None:
-        result = await session.exec(select(Author).where(Author.id == author_id))
-        return result.first()
+        return await session.get(Author, author_id)
 
     @with_session
     async def list(
@@ -41,12 +40,16 @@ class AuthorsRepository:
         offset = (pagination.page - 1) * pagination.per_page
         limit = pagination.per_page
 
-        total_count_result = await session.exec(select(func.count(Author.id)))
-        total_count = total_count_result.one()
+        total_count = await session.scalar(select(func.count(Author.id))) or 0
 
-        query = select(Author).offset(offset).limit(limit)
-        result = await session.exec(query)
-        authors = result.all()
+        stmt = (
+            select(Author)
+            .order_by(Author.name)
+            .offset(offset)
+            .limit(limit)
+        )
+        result = await session.scalars(stmt)
+        authors = list(result.all())
         return authors, total_count
 
     @with_session

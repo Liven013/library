@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from src.models.base import PaginationRequest
-from src.models.books import Book, BookCreate, BookUpdate, ListBooksResponse
+from src.models.books import Book, BookCreate, BookDetail, BookUpdate, ListBooksResponse
 from src.repositories.books import BooksRepository
 from src.utils.pagination import build_pagination
 
@@ -15,6 +15,9 @@ class BooksService:
 
     async def get_book(self, book_id: UUID) -> Book | None:
         return await self.repository.get_by_id(book_id)
+
+    async def get_book_detail(self, book_id: UUID) -> BookDetail | None:
+        return await self.repository.get_detail(book_id)
 
     async def list_books(self, pagination: PaginationRequest) -> ListBooksResponse:
         books, total_count = await self.repository.list(pagination)

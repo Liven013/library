@@ -9,7 +9,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel
 
 from src.models.authors import Author
-from src.models.books import Book
+from src.models.books import Book, BookTagLink
+from src.models.cabinets import Cabinet
+from src.models.shelves import Shelf
+from src.models.tags import Tag
 
 target_metadata = SQLModel.metadata
 config = context.config
