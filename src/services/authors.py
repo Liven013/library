@@ -19,8 +19,9 @@ class AuthorsService:
     async def list_authors(
         self,
         pagination: PaginationRequest,
+        search_q: str | None = None,
     ) -> ListAuthorsResponse:
-        authors, total_count = await self.repository.list(pagination)
+        authors, total_count = await self.repository.list(pagination, search_q=search_q)
         pagination_response = build_pagination(
             total_count=total_count,
             pagination_request=pagination,

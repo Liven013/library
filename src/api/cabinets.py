@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.core.container import get_cabinets_service
 from src.models.base import PaginationRequest
@@ -29,8 +29,9 @@ async def add_cabinet(
 async def list_cabinets(
     service: CabinetsService = Depends(get_cabinets_service),
     pagination: PaginationRequest = Depends(),
+    q: str | None = Query(None, description="Поиск по названию шкафа (без учёта регистра)"),
 ) -> ListCabinetsResponse:
-    return await service.list_cabinets(pagination)
+    return await service.list_cabinets(pagination, search_q=q)
 
 
 @router.get("/{cabinet_id}", response_model=Cabinet)

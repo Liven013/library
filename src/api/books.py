@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 
 from src.core.container import get_books_service
 from src.core.covers import save_cover
@@ -67,9 +67,9 @@ async def add_book(
 async def list_books(
     service: BooksService = Depends(get_books_service),
     pagination: PaginationRequest = Depends(),
+    q: str | None = Query(None, description="Поиск по названию (без учёта регистра)"),
 ):
-    print("list_books","OK")
-    return await service.list_books(pagination)
+    return await service.list_books(pagination, search_q=q)
 
 
 @router.get("/{book_id}", response_model=BookDetail)

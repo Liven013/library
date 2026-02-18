@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { listBooks, deleteBook, createBook } from '../api/books'
-import { listAuthors } from '../api/authors'
+import { listAuthors, getAuthor } from '../api/authors'
 import { listAllShelves } from '../api/shelves'
 import { listAllTags } from '../api/tags'
 import { buildBookFormData, showBookError } from '../utils/books'
@@ -40,32 +40,44 @@ function DefaultCover() {
 
 export default function BooksList() {
   const [data, setData] = useState({ books: [], pagination: { current_page: 1, total_pages: 1 } })
-  const [authors, setAuthors] = useState([])
   const [shelves, setShelves] = useState([])
   const [tags, setTags] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const debounceRef = useRef(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [submitLoading, setSubmitLoading] = useState(false)
 
   useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setPage(1)
+    }, 350)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [searchQuery])
+
+  useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
-    listBooks({ page, per_page: 10 })
+    const params = { page, per_page: 10 }
+    if (debouncedSearch.trim()) params.q = debouncedSearch.trim()
+    listBooks(params)
       .then((res) => { if (!cancelled) setData(res) })
       .catch((e) => { if (!cancelled) setError(e.message || 'Ошибка загрузки') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [page])
+  }, [page, debouncedSearch])
 
   const openCreate = () => {
     setForm(emptyForm)
     setModalOpen(true)
     Promise.all([
-      listAuthors({ per_page: 500 }).then((r) => setAuthors(r.authors || [])).catch(() => setAuthors([])),
       listAllShelves().then(setShelves).catch(() => setShelves([])),
       listAllTags().then(setTags).catch(() => setTags([])),
     ])
@@ -78,7 +90,9 @@ export default function BooksList() {
       .then(() => {
         setModalOpen(false)
         setPage(1)
-        listBooks({ page: 1, per_page: 10 }).then(setData)
+        const params = { page: 1, per_page: 10 }
+        if (debouncedSearch.trim()) params.q = debouncedSearch.trim()
+        listBooks(params).then(setData)
       })
       .catch(showBookError)
       .finally(() => setSubmitLoading(false))
@@ -90,9 +104,6 @@ export default function BooksList() {
       .then(() => setData((prev) => ({ ...prev, books: prev.books.filter((b) => b.id !== id) })))
       .catch((e) => alert(e.message || 'Ошибка удаления'))
   }
-
-  if (loading) return <p style={{ color: 'var(--muted)' }}>Загрузка...</p>
-  if (error) return <p style={{ color: 'var(--danger)' }}>{error}</p>
 
   const { books, pagination } = data
   const hasPrev = pagination.current_page > 1
@@ -107,7 +118,24 @@ export default function BooksList() {
         </button>
       </div>
 
-      {books.length === 0 ? (
+      <div className="form-row" style={{ marginBottom: '1rem', maxWidth: 320 }}>
+        <label htmlFor="books-search">Поиск</label>
+        <input
+          id="books-search"
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="По названию книги..."
+          autoComplete="off"
+          autoFocus
+        />
+      </div>
+
+      {error ? (
+        <p style={{ color: 'var(--danger)' }}>{error}</p>
+      ) : loading ? (
+        <p style={{ color: 'var(--muted)' }}>Загрузка...</p>
+      ) : books.length === 0 ? (
         <p style={{ color: 'var(--muted)' }}>Книг пока нет.</p>
       ) : (
         <>
@@ -163,7 +191,8 @@ export default function BooksList() {
           <BookForm
             form={form}
             setForm={setForm}
-            authors={authors}
+            listAuthors={listAuthors}
+            getAuthor={getAuthor}
             shelves={shelves}
             tags={tags}
             onSubmit={handleSubmit}

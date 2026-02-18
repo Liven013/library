@@ -19,8 +19,9 @@ class CabinetsService:
     async def list_cabinets(
         self,
         pagination: PaginationRequest,
+        search_q: str | None = None,
     ) -> ListCabinetsResponse:
-        cabinets, total_count = await self.repository.list(pagination)
+        cabinets, total_count = await self.repository.list(pagination, search_q=search_q)
         pagination_response = build_pagination(
             total_count=total_count,
             pagination_request=pagination,

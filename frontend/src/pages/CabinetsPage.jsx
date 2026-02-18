@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { listAllCabinets, createCabinet, updateCabinet, deleteCabinet } from '../api/cabinets'
 import { listAllShelves, createShelf, updateShelf, deleteShelf } from '../api/shelves'
 import Modal from '../components/Modal'
@@ -7,6 +7,15 @@ import { IconAdd, IconEdit, IconDelete } from '../components/Icons'
 function toList(res, key) {
   if (Array.isArray(res)) return res
   return Array.isArray(res?.[key]) ? res[key] : []
+}
+
+/** True, если хотя бы одно слово в text начинается с fragment (без учёта регистра). */
+function wordStartsWith(text, fragment) {
+  if (!fragment || !text) return !fragment
+  const f = fragment.trim().toLowerCase()
+  if (!f) return true
+  const words = (text || '').trim().split(/\s+/)
+  return words.some((w) => w.toLowerCase().startsWith(f))
 }
 
 /** Группирует полки по шкафу. Сначала шкафы по порядку, в конце — «Без шкафа». */
@@ -38,6 +47,9 @@ export default function CabinetsPage() {
   const [shelfName, setShelfName] = useState('')
   const [shelfCabinetId, setShelfCabinetId] = useState('')
   const [shelfSubmitting, setShelfSubmitting] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const debounceRef = useRef(null)
 
   const load = () => {
     setLoading(true)
@@ -52,6 +64,12 @@ export default function CabinetsPage() {
   }
 
   useEffect(() => load(), [])
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 350)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [searchQuery])
 
   const openCabinet = (cabinet = null) => {
     setEditingCabinet(cabinet)
@@ -101,10 +119,16 @@ export default function CabinetsPage() {
     deleteShelf(String(id)).then(load).catch((e) => alert(e.message || 'Ошибка'))
   }
 
-  if (loading) return <p style={{ color: 'var(--muted)' }}>Загрузка...</p>
-  if (error) return <p style={{ color: 'var(--danger)' }}>{error}</p>
-
-  const groups = groupShelvesByCabinet(shelves, cabinets)
+  const allGroups = groupShelvesByCabinet(shelves, cabinets)
+  const q = debouncedSearch.trim()
+  const groups = q
+    ? allGroups
+      .map((g) => ({
+        ...g,
+        shelves: g.shelves.filter((s) => wordStartsWith(s.name, q)),
+      }))
+      .filter((g) => wordStartsWith(g.name, q) || g.shelves.length > 0)
+    : allGroups
   const empty = cabinets.length === 0 && shelves.length === 0
 
   return (
@@ -119,9 +143,26 @@ export default function CabinetsPage() {
         </div>
       </div>
 
+      <div className="form-row" style={{ marginBottom: '1rem', maxWidth: 320 }}>
+        <label htmlFor="cabinets-search">Поиск</label>
+        <input
+          id="cabinets-search"
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="По шкафу или полке..."
+          autoComplete="off"
+          autoFocus
+        />
+      </div>
+
       <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>Полки сгруппированы по шкафу.</p>
 
-      {empty ? (
+      {error ? (
+        <p style={{ color: 'var(--danger)' }}>{error}</p>
+      ) : loading ? (
+        <p style={{ color: 'var(--muted)' }}>Загрузка...</p>
+      ) : empty ? (
         <p style={{ color: 'var(--muted)' }}>Нет шкафов и полок. Добавьте шкаф или полку.</p>
       ) : (
         <div style={s.groups}>

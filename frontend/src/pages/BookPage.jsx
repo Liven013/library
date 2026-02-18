@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getBook, updateBook, deleteBook } from '../api/books'
-import { listAuthors } from '../api/authors'
+import { listAuthors, getAuthor } from '../api/authors'
 import { listAllShelves } from '../api/shelves'
 import { listAllTags } from '../api/tags'
 import { buildBookFormData, showBookError } from '../utils/books'
@@ -35,7 +35,6 @@ export default function BookPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [editing, setEditing] = useState(false)
-  const [authors, setAuthors] = useState([])
   const [shelves, setShelves] = useState([])
   const [tags, setTags] = useState([])
   const [form, setForm] = useState(null)
@@ -65,7 +64,6 @@ export default function BookPage() {
   useEffect(() => {
     if (editing) {
       Promise.all([
-        listAuthors({ per_page: 500 }).then((r) => setAuthors(r.authors || [])).catch(() => setAuthors([])),
         listAllShelves().then(setShelves).catch(() => setShelves([])),
         listAllTags().then(setTags).catch(() => setTags([])),
       ])
@@ -161,7 +159,8 @@ export default function BookPage() {
           <BookForm
             form={form}
             setForm={setForm}
-            authors={authors}
+            listAuthors={listAuthors}
+            getAuthor={getAuthor}
             shelves={shelves}
             tags={tags}
             onSubmit={handleSubmit}

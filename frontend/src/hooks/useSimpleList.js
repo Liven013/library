@@ -1,22 +1,41 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+
+const SEARCH_DEBOUNCE_MS = 350
 
 /**
  * Универсальный хук для страницы списка с одним полем (имя): загрузка, пагинация, создание/редактирование/удаление в модалке.
+ * Поиск выполняется фоново с debounce, не сбивая ввод.
  */
 export function useSimpleList({ listApi, itemsKey, createApi, updateApi, deleteApi, deleteConfirm = 'Удалить?' }) {
   const [data, setData] = useState({ items: [], pagination: { current_page: 1, total_pages: 1 } })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [name, setName] = useState('')
   const [submitLoading, setSubmitLoading] = useState(false)
+  const debounceRef = useRef(null)
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setPage(1)
+    }, SEARCH_DEBOUNCE_MS)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [searchQuery])
 
   const load = useCallback(() => {
     setLoading(true)
     setError(null)
-    listApi({ page, per_page: 10 })
+    const params = { page, per_page: 10 }
+    if (debouncedSearch.trim()) params.q = debouncedSearch.trim()
+    listApi(params)
       .then((res) =>
         setData({
           items: res[itemsKey] ?? [],
@@ -25,11 +44,16 @@ export function useSimpleList({ listApi, itemsKey, createApi, updateApi, deleteA
       )
       .catch((e) => setError(e.message || 'Ошибка загрузки'))
       .finally(() => setLoading(false))
-  }, [page, listApi, itemsKey])
+  }, [page, debouncedSearch, listApi, itemsKey])
 
   useEffect(() => {
     load()
   }, [load])
+
+  const setSearchQueryAndResetPage = useCallback((v) => {
+    setSearchQuery(v)
+    setPage(1)
+  }, [])
 
   const openCreate = () => {
     setEditingItem(null)
@@ -77,6 +101,8 @@ export function useSimpleList({ listApi, itemsKey, createApi, updateApi, deleteA
     error,
     page,
     setPage,
+    searchQuery,
+    setSearchQuery: setSearchQueryAndResetPage,
     modalOpen,
     openCreate,
     openEdit,

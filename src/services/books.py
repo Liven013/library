@@ -19,8 +19,8 @@ class BooksService:
     async def get_book_detail(self, book_id: UUID) -> BookDetail | None:
         return await self.repository.get_detail(book_id)
 
-    async def list_books(self, pagination: PaginationRequest) -> ListBooksResponse:
-        books, total_count = await self.repository.list(pagination)
+    async def list_books(self, pagination: PaginationRequest, search_q: str | None = None) -> ListBooksResponse:
+        books, total_count = await self.repository.list(pagination, search_q=search_q)
         pagination_response = build_pagination(
             total_count=total_count,
             pagination_request=pagination,

@@ -349,6 +349,11 @@ label {
   align-items: center;
 }
 
+/* Поле выбора автора с поиском */
+.author-search-select-list li[role="option"] {
+  border-radius: 4px;
+}
+
 .tag-chip {
   display: inline-block;
   padding: 0.2rem 0.5rem;

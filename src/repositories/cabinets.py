@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import with_session
 from src.models.base import PaginationRequest
 from src.models.cabinets import Cabinet, CabinetCreate, CabinetUpdate
 from src.models.shelves import Shelf
+
+
+def _escape_like(s: str) -> str:
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 class CabinetsRepository:
@@ -37,11 +41,22 @@ class CabinetsRepository:
         self,
         pagination: PaginationRequest,
         session: AsyncSession,
+        search_q: str | None = None,
     ) -> tuple[list[Cabinet], int]:
         offset = (pagination.page - 1) * pagination.per_page
         limit = pagination.per_page
-        total_count = await session.scalar(select(func.count(Cabinet.id))) or 0
-        stmt = select(Cabinet).order_by(Cabinet.name).offset(offset).limit(limit)
+        stmt = select(Cabinet).order_by(Cabinet.name)
+        count_stmt = select(func.count(Cabinet.id))
+        if search_q and (q := search_q.strip()):
+            esc = _escape_like(q)
+            cond = or_(
+                Cabinet.name.ilike(esc + "%"),
+                Cabinet.name.ilike("% " + esc + "%"),
+            )
+            stmt = stmt.where(cond)
+            count_stmt = count_stmt.where(cond)
+        total_count = await session.scalar(count_stmt) or 0
+        stmt = stmt.offset(offset).limit(limit)
         result = await session.scalars(stmt)
         return list(result.all()), total_count
 

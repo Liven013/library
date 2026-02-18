@@ -10,6 +10,7 @@ export default function AuthorsList() {
       editTitle="Редактировать автора"
       fieldLabel="Имя"
       deleteConfirm="Удалить автора?"
+      searchPlaceholder="По имени автора..."
       listApi={listAuthors}
       itemsKey="authors"
       createApi={createAuthor}

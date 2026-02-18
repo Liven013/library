@@ -1,11 +1,16 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import with_session
 from src.models.authors import Author, AuthorCreate, AuthorUpdate
 from src.models.base import PaginationRequest
+
+
+def _escape_like(s: str) -> str:
+    """Экранирует символы % и _ для использования в LIKE/ILIKE."""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 class AuthorsRepository:
@@ -36,18 +41,26 @@ class AuthorsRepository:
         self,
         pagination: PaginationRequest,
         session: AsyncSession,
+        search_q: str | None = None,
     ) -> tuple[list[Author], int]:
         offset = (pagination.page - 1) * pagination.per_page
         limit = pagination.per_page
 
-        total_count = await session.scalar(select(func.count(Author.id))) or 0
+        stmt = select(Author).order_by(Author.name)
+        count_stmt = select(func.count(Author.id))
 
-        stmt = (
-            select(Author)
-            .order_by(Author.name)
-            .offset(offset)
-            .limit(limit)
-        )
+        if search_q and (q := search_q.strip()):
+            # Одно из слов в имени начинается с фрагмента (без учёта регистра)
+            esc = _escape_like(q)
+            cond = or_(
+                Author.name.ilike(esc + "%"),
+                Author.name.ilike("% " + esc + "%"),
+            )
+            stmt = stmt.where(cond)
+            count_stmt = count_stmt.where(cond)
+
+        total_count = await session.scalar(count_stmt) or 0
+        stmt = stmt.offset(offset).limit(limit)
         result = await session.scalars(stmt)
         authors = list(result.all())
         return authors, total_count

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import with_session
 from src.models.authors import Author
@@ -15,6 +15,10 @@ from src.models.books import (
 from src.models.shelves import Shelf
 from src.models.tags import Tag
 from src.models.base import PaginationRequest
+
+
+def _escape_like(s: str) -> str:
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def _book_create_to_row(book_create: BookCreate) -> dict:
@@ -92,18 +96,27 @@ class BooksRepository:
         self,
         pagination: PaginationRequest,
         session: AsyncSession,
+        search_q: str | None = None,
     ) -> tuple[list[BookInList], int]:
         offset = (pagination.page - 1) * pagination.per_page
         limit = pagination.per_page
-        total_count = await session.scalar(select(func.count(Book.id))) or 0
         stmt = (
             select(Book, Author.name.label("author_name"), Shelf.name.label("shelf_name"))
             .outerjoin(Author, Book.author_id == Author.id)
             .outerjoin(Shelf, Book.shelf_id == Shelf.id)
-            .order_by(Book.title)
-            .offset(offset)
-            .limit(limit)
         )
+        if search_q and (q := search_q.strip()):
+            esc = _escape_like(q)
+            cond = or_(
+                Book.title.ilike(esc + "%"),
+                Book.title.ilike("% " + esc + "%"),
+            )
+            stmt = stmt.where(cond)
+            count_stmt = select(func.count(Book.id)).where(cond)
+        else:
+            count_stmt = select(func.count(Book.id))
+        total_count = await session.scalar(count_stmt) or 0
+        stmt = stmt.order_by(Book.title).offset(offset).limit(limit)
         result = await session.execute(stmt)
         rows = result.all()
         if not rows:

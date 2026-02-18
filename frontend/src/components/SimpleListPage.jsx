@@ -35,6 +35,7 @@ export default function SimpleListPage({
   editTitle = 'Редактировать',
   fieldLabel = 'Имя',
   deleteConfirm = 'Удалить?',
+  searchPlaceholder,
   listApi,
   itemsKey,
   createApi,
@@ -48,6 +49,8 @@ export default function SimpleListPage({
     error,
     page,
     setPage,
+    searchQuery,
+    setSearchQuery,
     modalOpen,
     openCreate,
     openEdit,
@@ -59,9 +62,6 @@ export default function SimpleListPage({
     handleDelete,
     submitLoading,
   } = useSimpleList({ listApi, itemsKey, createApi, updateApi, deleteApi, deleteConfirm })
-
-  if (loading) return <p style={{ color: 'var(--muted)' }}>Загрузка...</p>
-  if (error) return <p style={{ color: 'var(--danger)' }}>{error}</p>
 
   const hasPrev = pagination.current_page > 1
   const hasNext = pagination.current_page < pagination.total_pages
@@ -75,7 +75,24 @@ export default function SimpleListPage({
         </button>
       </div>
 
-      {items.length === 0 ? (
+      <div className="form-row" style={{ marginBottom: '1rem', maxWidth: 320 }}>
+        <label htmlFor="list-search">Поиск</label>
+        <input
+          id="list-search"
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={searchPlaceholder ?? 'Введите для поиска...'}
+          autoComplete="off"
+          autoFocus
+        />
+      </div>
+
+      {error ? (
+        <p style={{ color: 'var(--danger)' }}>{error}</p>
+      ) : loading ? (
+        <p style={{ color: 'var(--muted)' }}>Загрузка...</p>
+      ) : items.length === 0 ? (
         <p style={{ color: 'var(--muted)' }}>{emptyMessage}</p>
       ) : (
         <>

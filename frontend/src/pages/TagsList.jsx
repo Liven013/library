@@ -10,6 +10,7 @@ export default function TagsList() {
       editTitle="Редактировать тег"
       fieldLabel="Название"
       deleteConfirm="Удалить тег?"
+      searchPlaceholder="По названию тега..."
       listApi={listTags}
       itemsKey="tags"
       createApi={createTag}

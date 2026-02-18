@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.core.container import get_authors_service
 from src.models.authors import Author, AuthorCreate, AuthorUpdate, ListAuthorsResponse
@@ -22,8 +22,9 @@ async def add_author(
 async def list_authors(
     service: AuthorsService = Depends(get_authors_service),
     pagination: PaginationRequest = Depends(),
+    q: str | None = Query(None, description="Поиск по имени (без учёта регистра)"),
 ):
-    return await service.list_authors(pagination)
+    return await service.list_authors(pagination, search_q=q)
 
 
 @router.get("/{author_id}", response_model=Author)

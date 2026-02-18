@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.core.container import get_tags_service
 from src.models.base import PaginationRequest
@@ -29,8 +29,9 @@ async def add_tag(
 async def list_tags(
     service: TagsService = Depends(get_tags_service),
     pagination: PaginationRequest = Depends(),
+    q: str | None = Query(None, description="Поиск по названию (без учёта регистра)"),
 ) -> ListTagsResponse:
-    return await service.list_tags(pagination)
+    return await service.list_tags(pagination, search_q=q)
 
 
 @router.get("/{tag_id}", response_model=Tag)

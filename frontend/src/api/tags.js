@@ -4,6 +4,7 @@ export function listTags(params = {}) {
   const sp = new URLSearchParams();
   if (params.page != null) sp.set('page', params.page);
   if (params.per_page != null) sp.set('per_page', params.per_page);
+  if (params.q != null && params.q !== '') sp.set('q', params.q);
   const qs = sp.toString();
   return api.get(`/tags/${qs ? `?${qs}` : ''}`);
 }

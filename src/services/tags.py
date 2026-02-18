@@ -19,8 +19,9 @@ class TagsService:
     async def list_tags(
         self,
         pagination: PaginationRequest,
+        search_q: str | None = None,
     ) -> ListTagsResponse:
-        tags, total_count = await self.repository.list(pagination)
+        tags, total_count = await self.repository.list(pagination, search_q=search_q)
         pagination_response = build_pagination(
             total_count=total_count,
             pagination_request=pagination,

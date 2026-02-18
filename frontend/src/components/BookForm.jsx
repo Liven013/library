@@ -1,8 +1,10 @@
+import AuthorSearchSelect from './AuthorSearchSelect'
+
 /**
- * Форма книги (создание/редактирование): все поля + авторы, полки, теги, обложка.
- * Родитель передаёт form, setForm, authors, shelves, tags и обрабатывает submit.
+ * Форма книги (создание/редактирование): все поля + авторы (поиск на бэкенде), полки, теги, обложка.
+ * Родитель передаёт form, setForm, listAuthors, getAuthor, shelves, tags и обрабатывает submit.
  */
-export default function BookForm({ form, setForm, authors = [], shelves = [], tags = [], onSubmit, submitLoading, submitLabel = 'Сохранить', onCancel }) {
+export default function BookForm({ form, setForm, listAuthors, getAuthor, shelves = [], tags = [], onSubmit, submitLoading, submitLabel = 'Сохранить', onCancel }) {
   const toggleTag = (tagId) => {
     setForm((f) => ({
       ...f,
@@ -44,16 +46,14 @@ export default function BookForm({ form, setForm, authors = [], shelves = [], ta
       </div>
       <div className="form-row">
         <label htmlFor="book-author">Автор</label>
-        <select
+        <AuthorSearchSelect
           id="book-author"
           value={form?.author_id ?? ''}
-          onChange={(e) => setForm((f) => ({ ...f, author_id: e.target.value }))}
-        >
-          <option value="">— не выбран —</option>
-          {authors.map((a) => (
-            <option key={a.id} value={a.id}>{a.name}</option>
-          ))}
-        </select>
+          onChange={(authorId) => setForm((f) => ({ ...f, author_id: authorId }))}
+          onSearch={(q, perPage) => listAuthors({ q: q ?? undefined, per_page: perPage || 25 })}
+          getAuthor={(id) => getAuthor(id)}
+          placeholder="Введите имя для поиска или выберите из списка"
+        />
       </div>
       <div className="form-row">
         <label htmlFor="book-shelf">Полка</label>
