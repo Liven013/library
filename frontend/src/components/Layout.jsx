@@ -27,7 +27,7 @@ export default function Layout({ children }) {
 
   return (
     <div style={styles.wrapper} className={narrow ? 'layout-narrow' : ''}>
-      <div style={styles.headerWrap}>
+      <div className="layout-header-wrap" style={styles.headerWrap}>
         <header style={styles.header}>
           <Link to="/books" style={styles.logo}>Библиотека</Link>
           <nav style={styles.nav}>
@@ -59,8 +59,8 @@ const styles = {
     position: 'sticky',
     top: 0,
     zIndex: 100,
-    background: 'var(--bg)',
-    borderBottom: '1px solid var(--border)',
+    background: 'var(--header-bg)',
+    borderBottom: '1px solid rgba(0,0,0,0.2)',
   },
   header: {
     display: 'flex',
@@ -74,7 +74,7 @@ const styles = {
   logo: {
     fontSize: '1.25rem',
     fontWeight: 600,
-    color: 'var(--text)',
+    color: 'var(--header-text)',
     textDecoration: 'none',
   },
   nav: {
@@ -84,12 +84,12 @@ const styles = {
   navLink: {
     padding: '0.5rem 0.75rem',
     borderRadius: '6px',
-    color: 'var(--muted)',
+    color: 'var(--header-text-muted)',
     textDecoration: 'none',
   },
   navLinkActive: {
-    color: 'var(--accent)',
-    background: 'rgba(156, 123, 77, 0.28)',
+    color: 'var(--header-text)',
+    background: 'var(--header-link-active-bg)',
   },
   main: {
     flex: 1,
