@@ -27,20 +27,22 @@ export default function Layout({ children }) {
 
   return (
     <div style={styles.wrapper} className={narrow ? 'layout-narrow' : ''}>
-      <header style={styles.header}>
-        <Link to="/books" style={styles.logo}>Библиотека</Link>
-        <nav style={styles.nav}>
-          {nav.map(({ to, label }) => (
-            <Link
-              key={to}
-              to={to}
-              style={{ ...styles.navLink, ...(isActive(pathname, to) ? styles.navLinkActive : {}) }}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </header>
+      <div style={styles.headerWrap}>
+        <header style={styles.header}>
+          <Link to="/books" style={styles.logo}>Библиотека</Link>
+          <nav style={styles.nav}>
+            {nav.map(({ to, label }) => (
+              <Link
+                key={to}
+                to={to}
+                style={{ ...styles.navLink, ...(isActive(pathname, to) ? styles.navLinkActive : {}) }}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </header>
+      </div>
       <main style={styles.main}>{children}</main>
     </div>
   )
@@ -52,20 +54,21 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
-    paddingLeft: '1rem',
-    paddingRight: '1rem',
+  },
+  headerWrap: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+    background: 'var(--bg)',
+    borderBottom: '1px solid var(--border)',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
     gap: '2rem',
-    padding: '1rem 0.5rem',
-    background: 'var(--surface)',
-    borderBottom: '1px solid var(--border)',
-    borderLeft: '1px solid var(--border)',
-    borderRight: '1px solid var(--border)',
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+    padding: '1rem 1.5rem',
+    maxWidth: 1200,
+    margin: '0 auto',
     width: '100%',
   },
   logo: {
@@ -86,7 +89,7 @@ const styles = {
   },
   navLinkActive: {
     color: 'var(--accent)',
-    background: 'rgba(189, 183, 107, 0.35)',
+    background: 'rgba(156, 123, 77, 0.28)',
   },
   main: {
     flex: 1,
